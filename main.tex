@@ -14,6 +14,28 @@
 \usepackage{dblfloatfix}	% allow placement of a page-width figure at top or bottom of page
 % llt: Define a global style for URLs, rather that the default one
 
+\usepackage{listings}
+\lstdefinestyle{mystyle}{
+    %backgroundcolor=\color{backcolour},   
+    %commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    %numberstyle=\tiny\color{codegray},
+    %stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+ 
+\lstset{style=mystyle}
+
 \makeatletter
 \def\url@leostyle{%
   \@ifundefined{selectfont}{\def\UrlFont{\sf}}{\def\UrlFont{\small\bf\ttfamily}}}
@@ -90,7 +112,7 @@ breaklinks=true,
 \end{abstract}
 
 \keywords{
-	Agent-based simulation; DEVS formalism; municipal solid waste management system.
+	Agent-based Simulation; Discrete Event Sytem Formalism; Municipal Solid waste Management System.
 \\
 }
 
@@ -120,7 +142,9 @@ is a set-theoretical framework and has a modular characteristic~\cite{Zeigler84,
 To maximize the modular characteristic of the DEVS Formalism, this research proposes an object-oriented discrete event simulator using the Python programming language. The simulator captures the default behavior of the residents of the urban area using DEVS Formalism and specializes the residents by their occupation. Therefore, simulationists may reuse the DEVS simulation model to simulation the temporal behavior of the residents and may differentiate each resident by using occupation object. 
 
 \section{Related Works and Backgrounds}
+This section introduces the related works and analyze them. Also, it provides the background knowledge to understand the proposed method and the simulation environment.
 
+\subsection{Related Works: Waste Managements}
 There have been many studies to optimize the waste management applying computer programming GIS analysis, simulation models, system dynamics, integer linear programming(ILP), and mixed integer linear programming(MILP).
 Karadmias et al(2006)\cite{karadimas2006coupling} integrated GIS analysis and agent based simulation
 et al 
@@ -161,7 +185,7 @@ There are many studies using GIS and Agent based simulations to optimize waste m
 %다른사람이 연구한 방법들에 대해서 소개
 %제한점들	ex)문화에 대한 고려가 없었다
 
-\subsection{Backgrounds}
+\subsection{Backgrounds: Discrete Event System Specification}
 The DEVS formalism is a set-theoretic formalism developed for specifying discrete event systems. The DEVS formalism has two models to represent a discrete event system, the $Atomic Model$ and the $Coupled Model$. 
 The simulationist may specify the behavior of a component of the discrete event system using an atomic model and assembles the Atomic Models to build a bigger system using a Coupled Model. This research adopts the specification of the Atomic Model to represent the behavior of the participant simulation models of the urban simulation. The specification of the Atomic Model is defined as follows.
 
@@ -202,20 +226,74 @@ Then, as before, a new $ta(s')$ is computed, and the elapsed time $e$ is set to 
 \begin{figure}[!h]
     \centering
     \includegraphics[width=1.0\columnwidth]{fig/Atomic_model}
-    \caption{Diagram of an Atomic Model}
+    \caption{Example of an Atomic Model}
     \label{Fig:AtomicModel}
 \end{figure}
 
 Fig.~\ref{Fig:AtomicModel} shows the diagram of an Atomic Model. The label starting with the question mark denotes the input port, and the label starting with the bang denotes the output port. The ellipse shows the state of the model and ellipse with arrow denotes the initial state of the model. Each state has the state name and the positive real number which denotes the occupancy time. When the elapsed time meets the occupancy time, the simulation algorithm will trigger the output function and internal transition function, sequentially. 
 
-The proposed simulator partially accepts the notation of the Atomic model and its simulation algorithm. 
+The proposed simulator partially accepts the notation of DEVS Formalism and its simulation algorithm. Listing~\ref{lst:atomic} shows the python code of the example atomic model. As shown in the Listing~\ref{lst:atomic}, the proposed simulator provides a programming interface that has a one-to-one correspondence with the Atomic Model specification of the DEVS formalism.
+
+
+\begin{lstlisting}[language=Python, caption=Example Code of Atomic Model, label={lst:atomic}]
+class AtomicModel(BehaviorModelExecutor):
+    def __init__(self, instance_time, destruct_time, name, engine_name):
+        BehaviorModelExecutor.__init__(self, instance_time, destruct_time, name, engine_name)
+
+        self.init_state("State1")
+        self.insert_state("State1", Infinite)
+        self.insert_state("State2", 0)
+
+        self.insert_input_port("in_port")
+        self.insert_output_port("out_port")
+
+    def ext_trans(self,port, msg):
+        if port == "in_port":
+            self._cur_state = "State2"
+
+    def output(self):
+        name = self.get_name()
+        msg = SysMessage(name, "out_port")
+        return msg
+        
+    def int_trans(self):
+        if self._cur_state == "State2":
+            self._cur_state = "State1"
+\end{lstlisting}
 
 \section{Proposed Method and Environments}
 
-This section introduces the proposed method to model the municipal solid waste management system and its simulation environment. Since the resident solid waste management system, 
+This section introduces the proposed method to model the municipal solid waste management system and its simulation environment. To capture the dynamic behavior of the residents, we classified the type of the residents and model them in the object-oriented fashion. After modeling the resident, we developed a simulation model to represent the housing type. Finally, we developed simulation models to provide municipal solid waste management services to the residents. 
 
-\subsection{Waste Management System Modeling}
+\subsection{Modeling of an Urban Waste Management System}
+To model the residential area. 
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=1.0\columnwidth]{fig/human_model.png}
+    \caption{Atomic Model of a Resident}
+    \label{Fig:Humanmodel}
+\end{figure}
 
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=1.0\columnwidth]{fig/family_model.png}
+    \caption{Atomic Model of a Housing Type}
+    \label{Fig:Familymodel}
+\end{figure}
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=1.0\columnwidth]{fig/check_model.png}
+    \caption{Atomic Model to Calculate the Satisfaction Level of a Resident}
+    \label{Fig:Checkmodel}
+\end{figure}
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=1.0\columnwidth]{fig/check_model.png}
+    \caption{Diagram of an Atomic Model}
+    \label{Fig:Checkmodel}
+\end{figure}
 % 모델링을 어떻게 했다. 
 % 사람, 직업, 행위에 대해서 모델링을 어떻게 했다고 작성
 
@@ -231,7 +309,7 @@ This section introduces the proposed method to model the municipal solid waste m
 
 
 
-\subsection{Environments}
+\subsection{Simulation Environments}
 %개발한 시뮬레이터 코드 설명 %교수님
 %Diagram, 코드설명 같이
 
@@ -241,12 +319,16 @@ Explanation about evsim
 \section{Case Study}
 This section illustrates the case study of the proposed method and the simulation environments. This research models the Jang-Ryang district of the Pohang city in the Republic of Korea. The composition of the residents in Jang-Ryang district is different than other residential area. There are two colleges and one university located nearby, so many students live in a studio apartment complex during the school year. Also, the portion of the construction workers grows and subsides due to the construction plan of the city. The behaviors of the college students and the construction workers are different. 
 
+\subsection{Assumptions and the Simulation Parameters}
 Followings are the assumptions to model the Jang-Ryang district.
 \begin{itemize}
-    \item aaa
-    \item aaa
-    \item aaa
-    \item aaa
+    \item Each building has a garbage can to hold the garbage temporally.
+    \item Each resident has their own schedule to go out.
+    \item Every resident emits garbage every day when they go out. 
+    \item If residents have a family, then they emit garbage as a family together.
+    \item The garbage truck collects the garbage from the building regularly.
+    \item The satisfaction level of the resident may change at the moment when resident emits the garbage.
+    \item The resident may claim to the Government when the garbage goes above a certain level.
 \end{itemize}
 
 Following Table~\ref{tab:SimParam} shows the simulation parameters deduced from the assumptions.
@@ -262,8 +344,8 @@ Following Table~\ref{tab:SimParam} shows the simulation parameters deduced from 
 \begin{tabular}{|l|c|c|}
 \hline
  & Construction Workers & Student \\ \hline
-Office-going hour & 6:22:00 & 7:58:00 \\ \hline
-Amount of waste emission & 0.9 & 0.9 \\ \hline
+Leave Time & 6:22:00 & 7:58:00 \\ \hline
+Amount of Waste Emission & 0.9 & 0.9 \\ \hline
 Satisfaction Function & 
     $Satis(x) = \begin{cases}
               + 10 & \text{if } x < 0.8,\\
@@ -279,7 +361,13 @@ Satisfaction Function &
 \label{tab:SimParam}
 \end{table*}
 
-$Out\_time$ parameter represent an interval at which one leaves one's home(see $table1$), and the $trash$ parameter represents the amount of waste generated until out time. $satisfaction$ parameter represents one's satisfaction level according to the level of garbage
+$Out\_time$ parameter represent an interval at which one leaves one's home, and the $trash$ parameter represents the amount of waste generated until out time. For realistic simulation, the trash generation amount of residents drawn from average waste emissions per capita.\cite{Korea_resource_recirculation_information_system_2018}. $satisfaction$ parameter represents one's satisfaction level according to the level of garbage. Based on the experiences of some students, the decision made by the heuristic.
+
+%out_time?
+
+
+% 이상의 파라미터 값이 어떻게 책정되었는지가 설명되어야 함
+
 \begin{figure}[!h]
     \centering
     \includegraphics[width=1.0\columnwidth]{fig/map.jpg}
@@ -287,14 +375,20 @@ $Out\_time$ parameter represent an interval at which one leaves one's home(see $
     \label{Fig:JangYrang}
 \end{figure}
 
-
 %조사한 내용 설명 -> 코드에 어떻게 들어가는지
 %Graph그리기
 
 \\
 %%이루어지지 않고있다.장량동은 인구 7만3000명이 거주하는 포항에서 가장 큰 행정동으로 타 지역에 비해 평균연령이 상대적으로 낮고, 학생이 차지하는 비율이 높다. 또한, 포항은 철강산업단지의 본격적인 가동으로 공단 인구가 유입됨에따라 Blue collar의 비율이 높다. 비교적 편리한 교통여건과 상권이 형성돼 세입자를 들이기 쉬운 여건이어서 대표적인 원룸촌이 형성돼 있어 실거주자의 대부분이 단기 거주자인 특징을 가지고 있다. 
 %이번 연구에서는 대한민국 포항에 새롭게 형성된 신도시 양덕동 주변의 원룸촌을 모델링 대상으로 설정하였다
-\subsection{}
+\subsection{Jang-Ryang District Model and Simulation Results}
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=1.0\columnwidth]{fig/case_study_result.png}
+    \caption{Number of complaints according to the percentage of resident occupations}
+    \label{Fig:case_result}
+\end{figure}
 
 \section{Conclusion}
 %우리의 모델은 훌륭했다. 하지만 UI 적으로 공무원들이나 일반인들이 사용하기에는 무리가 있을것으로 예상된다. 이 부분을 보완해서 나중에 FLASK등과 연결하여 쉬운 인터페이스로 작동하도록 하면 좋을 것 같다.
